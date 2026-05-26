@@ -7,20 +7,9 @@
 
 
 
-
-
-
-
-
 // ---------------- LCD / IR ----------------
 #define IR_Pin 8
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-
-
-
-
-
-
 
 
 // ----------- Ultrasonic sensor ---------------
@@ -30,22 +19,10 @@ const int trig_Right = A0;
 const int echo_Right = A1;
 
 
-
-
-
-
-
-
 // -------- Right Ultrasonic sensor thresholds
 // const float WALL_TARGET_IN = 24.0;   // 2 feet
 const float right_dist_too_close = 2.5;
 const float right_dist_too_far = 8.0;
-
-
-
-
-
-
 
 
 // ----------- Servo ----------------
@@ -53,22 +30,10 @@ const int servoPin = 11;
 Servo scanServo;
 
 
-
-
-
-
-
-
 // ---------Ultrasonic sensor -----------
 const int CENTER_ANGLE = 90;   // servo pointing straight ahead
 const int LEFT_ANGLE   = 179;  // servo pointing left
 const int RIGHT_ANGLE  = 1;    // servo pointing right
-
-
-
-
-
-
 
 
 // --- Motor driver pins ---
@@ -81,26 +46,9 @@ const int enBPin = 5; // right motor speed control used to be 9, now 3
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // --- Encoder interrupt pins ---
 const int LEncPin = 3; // used to be 3, now 9
 const int REncPin = 2;
-
-
-
-
 
 
 
@@ -111,26 +59,8 @@ const int RIGHT_SPEED = 80;
 const int MIN_SPEED   = 0;   // never go below this — deadband floor
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // --- Obstacle distance threshold (inches) ---
 const float OBSTACLE_THRESHOLD_IN = 8.0;
-
-
-
-
 
 
 
@@ -139,29 +69,11 @@ const float OBSTACLE_THRESHOLD_IN = 8.0;
 int heading = 0;
 
 
-
-
-
-
-
-
 unsigned long lastTurnTime = 0;
-
-
-
-
-
-
 
 
 const int WALL_BASE_SPEED = 75;
 const int WALL_CORRECTION = 15;
-
-
-
-
-
-
 
 
 // ============================================================
@@ -174,12 +86,6 @@ float integral  = 0.0;   // running sum of error over time
 float prevError = 0.0;   // stores last loop's error for derivative calculation
 
 
-
-
-
-
-
-
 // --- Encoder counters ---
 volatile long cntrL    = 0;
 volatile long cntrR    = 0;
@@ -187,28 +93,12 @@ volatile long LIntTime = 0;
 volatile long RIntTime = 0;
 
 
-
-
-
-
-
-
 // --- Turn constant: encoder counts per degree of turn (tune if needed) ---
 const float cntrPerDegree = 0.400;
 
 
-
-
-
-
-
-
 // --- Grace period after pressing forward (ms) ---
 unsigned long forwardStartTime = 0;
-
-
-
-
 
 
 
@@ -218,22 +108,9 @@ enum State { STOP, FORWARD, WALL_FOLLOWING, TURN_LEFT, TURN_RIGHT};
 State currentState = STOP;
 
 
-
-
-
-
-
-
 // ============================================================
 // MOTOR FUNCTIONS
 // ============================================================
-
-
-
-
-
-
-
 
 // Immediately cut power to both motors
 void stopMotors() {
@@ -245,13 +122,6 @@ void stopMotors() {
   digitalWrite(in4Pin, LOW);
 }
 
-
-
-
-
-
-
-
 // Drive forward and reset PID state so controller starts fresh
 void moveForward() {
   cntrL = 0;
@@ -260,37 +130,17 @@ void moveForward() {
   prevError = 0.0;
 
 
-
-
   digitalWrite(in1Pin, HIGH);
   digitalWrite(in2Pin, LOW);
-
-
-
-
-
-
 
 
   digitalWrite(in3Pin, HIGH);
   digitalWrite(in4Pin, LOW);
 
 
-
-
-
-
-
-
   analogWrite(enAPin, LEFT_SPEED);
   analogWrite(enBPin, RIGHT_SPEED);
 }
-
-
-
-
-
-
 
 
 void moveForwardWithPID() {
@@ -300,27 +150,13 @@ void moveForwardWithPID() {
   digitalWrite(in4Pin, LOW);
 
 
-
-
   long tmpLcntr = cntrL;
   long tmpRcntr = cntrR;
-
-
-
-
-
-
 
 
   float error = (float)(tmpLcntr - tmpRcntr);
   integral = constrain(integral + error, -200.0, 200.0);
   float derivative = error - prevError;
-
-
-
-
-
-
 
 
   float correction = (gain * error)
@@ -330,17 +166,7 @@ void moveForwardWithPID() {
 
 
 
-
-
-
-
   prevError = error;
-
-
-
-
-
-
 
 
   if (tmpLcntr > tmpRcntr) {
@@ -362,10 +188,6 @@ void moveForwardWithPID() {
 
 
 
-
-
-
-
 // Drive backward and reset PID state so controller starts fresh
 void moveBackward() {
   cntrL = 0;
@@ -376,17 +198,9 @@ void moveBackward() {
 
 
 
-
-
-
-
   digitalWrite(in1Pin, LOW);
   digitalWrite(in2Pin, HIGH);
   analogWrite(enAPin, LEFT_SPEED);
-
-
-
-
 
 
 
@@ -399,17 +213,9 @@ void moveBackward() {
 
 
 
-
-
-
-
 // ============================================================
 // TURN FUNCTIONS
 // ============================================================
-
-
-
-
 
 
 
@@ -421,16 +227,8 @@ void turnRight90() {
 
 
 
-
-
-
-
   cntrL = 0;
   cntrR = 0;
-
-
-
-
 
 
 
@@ -443,18 +241,10 @@ void turnRight90() {
 
 
 
-
-
-
-
   unsigned long startTime = millis();
   while (cntrL < turnCounts && millis() - startTime < 1000) {
     // wait for encoder counts or timeout
   }
-
-
-
-
 
 
 
@@ -468,10 +258,6 @@ void turnRight90() {
 
 
 
-
-
-
-
 // Right wheel drives forward, left wheel stopped → robot pivots left
 void turnLeft90() {
   long turnCounts = (long)(90.0 * cntrPerDegree + 0.5);
@@ -479,16 +265,8 @@ void turnLeft90() {
 
 
 
-
-
-
-
   cntrL = 0;
   cntrR = 0;
-
-
-
-
 
 
 
@@ -501,18 +279,10 @@ void turnLeft90() {
 
 
 
-
-
-
-
   unsigned long startTime = millis();
   while (cntrR < turnCounts && millis() - startTime < 1000) {
     // wait for encoder counts or timeout
   }
-
-
-
-
 
 
 
@@ -522,10 +292,6 @@ void turnLeft90() {
   cntrL = 0;
   cntrR = 0;
 }
-
-
-
-
 
 
 
@@ -544,10 +310,6 @@ void updateLCD(float frontDist, float rightDist) {
 
 
 
-
-
-
-
   lcd.setCursor(0, 1);
   lcd.print("R:");
   lcd.setCursor(2, 1);
@@ -555,10 +317,6 @@ void updateLCD(float frontDist, float rightDist) {
   lcd.setCursor(2, 1);
   lcd.print(rightDist, 1);
 }
-
-
-
-
 
 
 
@@ -577,10 +335,6 @@ void leftWhlCnt() {
 
 
 
-
-
-
-
 void rightWhlCnt() {
   long intTime = micros();
   if (intTime > RIntTime + 1000L) {
@@ -588,10 +342,6 @@ void rightWhlCnt() {
     cntrR++;
   }
 }
-
-
-
-
 
 
 
@@ -610,15 +360,7 @@ float readFrontDistanceInches() {
 
 
 
-
-
-
-
   unsigned long duration = pulseIn(echo_Front, HIGH, 30000);
-
-
-
-
 
 
 
@@ -628,10 +370,6 @@ float readFrontDistanceInches() {
   }
   return duration / 74.0 / 2.0;
 }
-
-
-
-
 
 
 
@@ -648,10 +386,6 @@ float readFrontAverageDistance() {
 
 
 
-
-
-
-
 // -------------------- Right --------------------------
 float readRightDistanceInches() {
   digitalWrite(trig_Right, LOW);
@@ -663,15 +397,7 @@ float readRightDistanceInches() {
 
 
 
-
-
-
-
   unsigned long duration = pulseIn(echo_Right, HIGH, 30000);
-
-
-
-
 
 
 
@@ -681,10 +407,6 @@ float readRightDistanceInches() {
   }
   return duration / 74.0 / 2.0;
 }
-
-
-
-
 
 
 
@@ -701,10 +423,6 @@ float readRightAverageDistance() {
 
 
 
-
-
-
-
 // ============================================================
 // SERVO HELPERS
 // ============================================================
@@ -712,10 +430,6 @@ void centerServo() {
   scanServo.write(CENTER_ANGLE);
   delay(350);
 }
-
-
-
-
 
 
 
@@ -729,10 +443,6 @@ float lookLeft() {
 
 
 
-
-
-
-
 float lookRight() {
   scanServo.write(RIGHT_ANGLE);
   delay(450);
@@ -740,15 +450,11 @@ float lookRight() {
 }
 
 
-
-
 //============================================================
 //FSM Helper Functions
 //============================================================
 void rightWallFollowing(){
   float rightDist = readRightAverageDistance();
-
-
 
 
   if (rightDist >= right_dist_too_close && rightDist <= right_dist_too_far) {
@@ -761,21 +467,15 @@ void rightWallFollowing(){
     delay(200);         // stop completely
 
 
-
-
     analogWrite(enAPin, 0);
     digitalWrite(in3Pin, HIGH);
     digitalWrite(in4Pin, LOW);
     analogWrite(enBPin, 90);
 
 
-
-
     delay(200);
     stopMotors();
     delay(100);
-
-
 
 
     // move forward a little after correcting
@@ -789,21 +489,15 @@ void rightWallFollowing(){
     delay(200);
 
 
-
-
     digitalWrite(in1Pin, HIGH);
     digitalWrite(in2Pin, LOW);
     analogWrite(enAPin, 90);    // change this to change
     analogWrite(enBPin, 0);
 
 
-
-
     delay(200);
     stopMotors();
     delay(100);
-
-
 
 
     // move forward a little after correcting
@@ -812,14 +506,6 @@ void rightWallFollowing(){
     stopMotors();
   }
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -836,18 +522,10 @@ bool isRightCornerDetected(){
 
 
 
-
-
-
-
 bool isFrontClear(){
   float frontDist = readFrontAverageDistance();
   return (frontDist > OBSTACLE_THRESHOLD_IN);
 }
-
-
-
-
 
 
 
@@ -857,10 +535,6 @@ bool isFrontClear(){
 // ============================================================
 void setup() {
   Serial.begin(9600);
-
-
-
-
 
 
 
@@ -875,16 +549,8 @@ void setup() {
 
 
 
-
-
-
-
   pinMode(LEncPin, INPUT);
   pinMode(REncPin, INPUT);
-
-
-
-
 
 
 
@@ -895,25 +561,13 @@ void setup() {
 
 
 
-
-
-
-
   pinMode(trig_Right, OUTPUT);
   pinMode(echo_Right, INPUT);
 
 
 
 
-
-
-
-
   stopMotors();
-
-
-
-
 
 
 
@@ -924,16 +578,8 @@ void setup() {
 
 
 
-
-
-
-
   pinMode(IR_Pin, INPUT);
   IrReceiver.begin(IR_Pin, ENABLE_LED_FEEDBACK);
-
-
-
-
 
 
 
@@ -944,24 +590,14 @@ void setup() {
 
 
 
-
-
-
-
   scanServo.attach(servoPin);
   centerServo();
 
 
 
 
-
-
-
-
   updateLCD(0.0, 0.0);
 }
-
-
 
 
 // ============================================================
@@ -974,17 +610,9 @@ void loop() {
 
 
 
-
-
-
-
   // ---------------- IR REMOTE CONTROL ----------------
   if (IrReceiver.decode()) {
     int command = IrReceiver.decodedIRData.command;
-
-
-
-
 
 
 
@@ -1001,10 +629,6 @@ void loop() {
 
 
 
-
-
-
-
     else if (command == 8) { // button 4
       currentState = STOP;
       stopMotors();
@@ -1014,16 +638,8 @@ void loop() {
 
 
 
-
-
-
-
     IrReceiver.resume();
   }
-
-
-
-
 
 
 
@@ -1038,16 +654,8 @@ void loop() {
 
 
 
-
-
-
-
     case FORWARD:
       updateLCD(frontDist, rightDist);
-
-
-
-
 
 
 
@@ -1064,18 +672,10 @@ void loop() {
 
 
 
-
-
-
-
     case TURN_LEFT:
       updateLCD(frontDist, rightDist);
       stopMotors();
       delay(150);
-
-
-
-
 
 
 
@@ -1086,16 +686,8 @@ void loop() {
 
 
 
-
-
-
-
       stopMotors();
       delay(20);
-
-
-
-
 
 
 
@@ -1108,21 +700,11 @@ void loop() {
 
 
 
-
-
-
-
       moveForward();
-
-
 
 
       delay(300);
       stopMotors();
-
-
-
-
 
 
 
@@ -1134,16 +716,8 @@ void loop() {
 
 
 
-
-
-
-
     case WALL_FOLLOWING:
       updateLCD(frontDist, rightDist);
-
-
-
-
 
 
 
@@ -1164,10 +738,6 @@ void loop() {
 
 
 
-
-
-
-
     case TURN_RIGHT:
       updateLCD(frontDist, rightDist);
       stopMotors();
@@ -1176,16 +746,8 @@ void loop() {
 
 
 
-
-
-
-
       turnRight90();
       heading -= 90;
-
-
-
-
 
 
 
@@ -1203,9 +765,6 @@ void loop() {
       }
       break;
   }
-
-
-}
 
 
 
